@@ -2,7 +2,7 @@ import axios from "axios";
 import { Prescription, RemainingDoses } from "./models";
 
 const medicationClient = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "https://api.kzs0.com",
   headers: {
     "Content-Type": "application/json",
   },
