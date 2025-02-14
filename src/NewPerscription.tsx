@@ -221,9 +221,11 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ Schedule, onChange }) => {
       handleDoseChange(index, "Amount", parseFloat(value));
     }
 
-    const tempDoseClone = [...tempDoseAmount];
-    tempDoseClone[index] = value;
-    setTempDoseAmount(tempDoseClone);
+    if (tempDoseAmount) {
+      const tempDoseClone = [...tempDoseAmount];
+      tempDoseClone[index] = value;
+      setTempDoseAmount(tempDoseClone);
+    }
   };
 
   const handleDoseChange = (
