@@ -1,234 +1,299 @@
-import React, { FC, useState } from "react";
-import { Duration, Prescription, Time } from "./models";
+import React, { useEffect, useState } from "react";
+import { Prescription, Medication, Schedule, ScheduledDose } from "./models";
+import { useAuth0 } from "@auth0/auth0-react";
 import { postNewPerscription } from "./client";
+import dayjs from "dayjs";
 
-const NewPerscription: FC = () => {
-  const [formData, setFormData] = useState<Prescription>({
-    Id: 0,
+type NewPrescriptionProps = {
+  RefreshDoses: () => void;
+};
+
+// Main Prescription Form
+const PrescriptionForm: React.FC<NewPrescriptionProps> = ({ RefreshDoses }) => {
+  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+  const [loaded, setLoaded] = useState<boolean>(false);
+  const [prescription, setPrescription] = useState<Prescription>({
+    ID: "",
     Medication: {
-      Id: 0,
+      ID: "",
       Name: "",
       Generic: false,
       Brand: "",
     },
     Schedule: {
-      Period: 0,
+      Period: "",
       Doses: [],
     },
     Doses: 0,
     Refills: 0,
-    ScheduleStart: new Date(Date.now()),
+    ScheduleStart: "",
   });
 
-  const [errors, setErrors] = useState({
-    Error: false,
-    ErrorStr: "",
-  });
+  useEffect(() => {
+    const f = async () => {
+      try {
+        if (!isAuthenticated) {
+          return;
+        }
 
-  const handleRootChange = (key: string, value: Time) => {
-    setFormData({
-      ...formData,
-      [key]: value,
-    });
-  };
-
-  const handleChange = (key: string, value: string | boolean) => {
-    setFormData({
-      ...formData,
-      Medication: {
-        ...formData.Medication,
-        [key]: value,
-      },
-    });
-  };
-
-  const handleNewScheduledDoseChange = (
-    index: number,
-    key: string,
-    value: string | boolean | number | Time,
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      Schedule: {
-        ...prev.Schedule,
-        Doses: prev.Schedule.Doses.map((d, i) =>
-          i === index ? { ...d, [key]: value } : d,
-        ),
-      },
-    }));
-  };
-
-  const addField = () => {
-    setFormData((prev) => ({
-      ...prev,
-      Schedule: {
-        ...prev.Schedule,
-        Doses: [
-          ...prev.Schedule.Doses,
-          {
-            DurationIntoPeriod: 0,
-            Amount: 0,
-            Unit: "",
-            Taken: false,
-            Time: new Date(),
+        const tk = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: `https://kenzo.us.auth0.com/api/v2/`,
+            scope: "read:current_user",
           },
-        ],
-      },
-    }));
-  };
+        });
 
-  const removeField = (dur: Duration) => {
-    setFormData((prev) => ({
-      ...prev,
-      Schedule: {
-        ...prev.Schedule,
-        Doses: prev.Schedule.Doses.filter(
-          (dose) => dose.DurationIntoPeriod !== dur,
-        ),
-      },
-    }));
-  };
+        if (tk === undefined) {
+          console.log("failed to access token");
+          return;
+        }
 
-  const validate = () => {
-    const newErrors: typeof errors = {
-      Error: false,
-      ErrorStr: "",
+        setLoaded(true);
+      } catch (e) {
+        console.log(e);
+      }
     };
 
-    // TODO client side form validation
+    if (!loaded) {
+      f();
+    }
+  }, [loaded, setLoaded, isAuthenticated, getAccessTokenSilently]);
 
-    setErrors(newErrors);
+  if (!isAuthenticated) {
+    return <div>Please Login to View Doses</div>;
+  }
 
-    return Object.values(newErrors).every((error) => !error);
+  const handleChange = <K extends keyof Prescription>(
+    field: K,
+    value: Prescription[K],
+  ) => {
+    setPrescription((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleMedicationChange = <K extends keyof Medication>(
+    field: K,
+    value: Medication[K],
+  ) => {
+    setPrescription((prev) => ({
+      ...prev,
+      Medication: { ...prev.Medication, [field]: value },
+    }));
+  };
+
+  const handleScheduleChange = <K extends keyof Schedule>(
+    field: K,
+    value: Schedule[K],
+  ) => {
+    setPrescription((prev) => ({
+      ...prev,
+      Schedule: { ...prev.Schedule, [field]: value },
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
-      console.log("Form Submitted", formData);
 
-      const rx: Prescription = { ...formData };
+    const tk = await getAccessTokenSilently({
+      authorizationParams: {
+        audience: `https://kenzo.us.auth0.com/api/v2/`,
+        scope: "read:current_user",
+      },
+    });
 
-      await postNewPerscription(rx);
-      // Perform any further actions like API calls here
-    }
+    prescription.ScheduleStart = dayjs(prescription.ScheduleStart).format(
+      "YYYY-MM-DDTHH:mm:ssZ",
+    );
+
+    console.log("Form Submitted:", prescription);
+
+    postNewPerscription(prescription, tk);
+
+    RefreshDoses();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="new-medication-form">
-      <div className="form-group">
-        <label htmlFor="medicationName">Medication Name:</label>
-        <input
-          type="text"
-          id="medicationName"
-          name="medicationName"
-          value={formData.Medication.Name}
-          onChange={(e) => handleChange("Name", e.target.value)}
-          className={errors.Error ? "error" : ""}
-        />
-        {errors.Error && (
-          <span className="error-message">{errors.ErrorStr}</span>
-        )}
-      </div>
+    <form onSubmit={handleSubmit}>
+      <h1>Prescription Form</h1>
 
-      <div className="form-group">
-        <label htmlFor="isMedicationGeneric">Is the medication generic:</label>
-        <input
-          type="checkbox"
-          id="isMedicationGeneric"
-          name="isMedicationGeneric"
-          value={formData.Medication.Generic.toString()}
-          onChange={(e) => handleChange("Generic", e.target.value == "true")}
-          className={errors.Error ? "error" : ""}
-        />
-        {errors.Error && (
-          <span className="error-message">{errors.ErrorStr}</span>
-        )}
-      </div>
+      {/* Medication Fields */}
+      <MedicationForm
+        Medication={prescription.Medication}
+        onChange={handleMedicationChange}
+      />
 
-      <div className="form-group">
-        <label htmlFor="brand">Brand:</label>
-        <input
-          type="text"
-          id="brand"
-          name="brand"
-          value={formData.Medication.Brand}
-          onChange={(e) => handleChange("Brand", e.target.value)}
-          className={errors.Error ? "error" : ""}
-        />
-        {errors.Error && (
-          <span className="error-message">{errors.ErrorStr}</span>
-        )}
-      </div>
+      {/* Schedule Fields */}
+      <ScheduleForm
+        Schedule={prescription.Schedule}
+        onChange={handleScheduleChange}
+      />
 
-      <div className="form-group">
-        <label htmlFor="startTime">Start Time:</label>
+      {/* Other Fields */}
+      <div>
+        <label>Doses:</label>
         <input
-          type="text"
-          id="startTime"
-          name="startTime"
-          value={formData.ScheduleStart.toString()}
+          type="number"
+          value={prescription.Doses}
+          onChange={(e) => handleChange("Doses", parseInt(e.target.value) || 0)}
+        />
+      </div>
+      <div>
+        <label>Refills:</label>
+        <input
+          type="number"
+          value={prescription.Refills}
           onChange={(e) =>
-            handleRootChange("ScheduleStart", new Date(e.target.value))
+            handleChange("Refills", parseInt(e.target.value) || 0)
           }
-          className={errors.Error ? "error" : ""}
         />
-        {errors.Error && (
-          <span className="error-message">{errors.ErrorStr}</span>
-        )}
+      </div>
+      <div>
+        <label>Schedule Start:</label>
+        <input
+          type="datetime-local"
+          value={prescription.ScheduleStart}
+          onChange={(e) => handleChange("ScheduleStart", e.target.value)}
+        />
       </div>
 
-      <div className="form-group">
-        <label>Scheduled Doses:</label>
-        {formData.Schedule.Doses.map((dose, index) => (
-          <div key={dose.DurationIntoPeriod} className="dynamic-field">
-            <label>Duration Into Period:</label>
-            <input
-              type="number"
-              value={dose.DurationIntoPeriod}
-              onChange={(e) =>
-                handleNewScheduledDoseChange(
-                  index,
-                  "DurationIntoPeriod",
-                  +e.target.value,
-                )
-              }
-              placeholder="Enter duration into period"
-            />
-            <label>Amount of Medication: </label>
-            <input
-              type="number"
-              value={dose.Amount}
-              onChange={(e) =>
-                handleNewScheduledDoseChange(index, "Amount", +e.target.value)
-              }
-              placeholder="Enter the amount of medicine"
-            />
-            <label>Unit of amount specified: </label>
-            <input
-              type="text"
-              value={dose.Unit}
-              onChange={(e) =>
-                handleNewScheduledDoseChange(index, "Unit", e.target.value)
-              }
-              placeholder="Enter the unit of the amount listed"
-            />
-            <button
-              type="button"
-              onClick={() => removeField(dose.DurationIntoPeriod)}
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-        <button type="button" onClick={addField}>
-          + Add Scheduled Dose
-        </button>
-      </div>
-
-      <button type="submit">Add Medication</button>
+      <button type="submit">Submit</button>
     </form>
   );
 };
 
-export default NewPerscription;
+// Medication Form
+type MedicationFormProps = {
+  Medication: Medication;
+  onChange: <K extends keyof Medication>(
+    field: K,
+    value: Medication[K],
+  ) => void;
+};
+
+const MedicationForm: React.FC<MedicationFormProps> = ({
+  Medication,
+  onChange,
+}) => {
+  return (
+    <fieldset>
+      <legend>Medication</legend>
+      <div>
+        <label>Name:</label>
+        <input
+          type="text"
+          value={Medication.Name}
+          onChange={(e) => onChange("Name", e.target.value)}
+        />
+      </div>
+      <div>
+        <label>Generic:</label>
+        <input
+          type="checkbox"
+          checked={Medication.Generic}
+          onChange={(e) => onChange("Generic", e.target.checked)}
+        />
+      </div>
+      <div>
+        <label>Brand:</label>
+        <input
+          type="text"
+          value={Medication.Brand}
+          onChange={(e) => onChange("Brand", e.target.value)}
+        />
+      </div>
+    </fieldset>
+  );
+};
+
+// Schedule Form with Dynamic Doses
+type ScheduleFormProps = {
+  Schedule: Schedule;
+  onChange: <K extends keyof Schedule>(field: K, value: Schedule[K]) => void;
+};
+
+const ScheduleForm: React.FC<ScheduleFormProps> = ({ Schedule, onChange }) => {
+  const [tempDoseAmount, setTempDoseAmount] = useState<string[]>();
+  const handleDoseAmountChange = (index: number, value: string) => {
+    const updatedDoses = [...Schedule.Doses];
+    if (
+      updatedDoses[index] &&
+      updatedDoses[index].Amount != (parseFloat(value) || 0)
+    ) {
+      handleDoseChange(index, "Amount", parseFloat(value));
+    }
+
+    const tempDoseClone = [...tempDoseAmount];
+    tempDoseClone[index] = value;
+    setTempDoseAmount(tempDoseClone);
+  };
+
+  const handleDoseChange = (
+    index: number,
+    field: keyof ScheduledDose,
+    value: unknown,
+  ) => {
+    const updatedDoses = [...Schedule.Doses];
+    updatedDoses[index] = { ...updatedDoses[index], [field]: value };
+    onChange("Doses", updatedDoses);
+  };
+
+  const addDose = () => {
+    onChange("Doses", [
+      ...Schedule.Doses,
+      { DurationIntoPeriod: "", Amount: 0, Unit: "" },
+    ]);
+  };
+
+  const removeDose = (index: number) => {
+    const updatedDoses = Schedule.Doses.filter((_, i) => i !== index);
+    onChange("Doses", updatedDoses);
+  };
+
+  return (
+    <fieldset>
+      <legend>Schedule</legend>
+      <div>
+        <label>Period:</label>
+        <input
+          type="text"
+          value={Schedule.Period}
+          onChange={(e) => onChange("Period", e.target.value)}
+        />
+      </div>
+
+      <h3>Doses</h3>
+      {Schedule.Doses.map((dose, index) => (
+        <div key={index}>
+          <label>Duration Into Period:</label>
+          <input
+            type="text"
+            value={dose.DurationIntoPeriod}
+            onChange={(e) =>
+              handleDoseChange(index, "DurationIntoPeriod", e.target.value)
+            }
+          />
+          <label>Amount:</label>
+          <input
+            type="text"
+            value={tempDoseAmount}
+            onChange={(e) => handleDoseAmountChange(index, e.target.value)}
+          />
+          <label>Unit:</label>
+          <input
+            type="text"
+            value={dose.Unit}
+            onChange={(e) => handleDoseChange(index, "Unit", e.target.value)}
+          />
+          <button type="button" onClick={() => removeDose(index)}>
+            Remove
+          </button>
+        </div>
+      ))}
+
+      <button type="button" onClick={addDose}>
+        Add Dose
+      </button>
+    </fieldset>
+  );
+};
+
+export default PrescriptionForm;
