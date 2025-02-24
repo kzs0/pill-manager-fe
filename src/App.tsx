@@ -10,19 +10,14 @@ function App() {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isAvailable, setIsAvailable] = useState(false);
-  const [refresh, setRefresh] = useState<number>(0);
+  const [loaded, setLoaded] = useState<boolean>(false);
 
   const handleOpenPopup = () => {
     setIsPopupOpen(true);
   };
 
-  const handleClosePopup = () => {
-    setIsPopupOpen(false);
-  };
-
   const incrementRefresh = () => {
     setIsPopupOpen(false);
-    setRefresh((prev) => prev + 1);
   };
 
   useEffect(() => {
@@ -64,26 +59,38 @@ function App() {
 
   return (
     <>
-      <LogoutButton />
-      <div className="app-header">
-        <h3>Medication Manager</h3>
-        <button onClick={handleOpenPopup} className="open-popup-button">
-          + Add Medication
-        </button>
-      </div>
-
-      <DoseCard NumberOfDosesToShow={5} Refresh={refresh} />
-
-      {isPopupOpen && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button onClick={handleClosePopup} className="close-popup-button">
-              X
+      <header className="bg-white shadow-sm dark:bg-gray-700">
+        <div className="flex justify-between mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Medication Manager
+          </h1>
+          <div />
+          <div>
+            <button
+              onClick={handleOpenPopup}
+              className="bg-gray-400 shadow-md align-middle hover:bg-gray-500 text-white font-medium rounded-lg text-sm px-4 py-2 me-2 mb-2 dark:bg-gray-600 dark:hover:bg-gray-700"
+            >
+              Add Medication
             </button>
-            <NewPerscription RefreshDoses={incrementRefresh} />
+            <LogoutButton />
           </div>
         </div>
-      )}
+      </header>
+
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <DoseCard
+          NumberOfDosesToShow={5}
+          Loaded={loaded}
+          SetLoaded={setLoaded}
+        />
+
+        <NewPerscription
+          RefreshDoses={incrementRefresh}
+          SetLoaded={setLoaded}
+          Open={isPopupOpen}
+          SetOpen={setIsPopupOpen}
+        />
+      </div>
     </>
   );
 }

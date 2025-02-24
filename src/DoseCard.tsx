@@ -9,13 +9,17 @@ import { useAuth0 } from "@auth0/auth0-react";
 
 type DoseCardProps = {
   NumberOfDosesToShow: number;
-  Refresh: number;
+  Loaded: boolean;
+  SetLoaded: (loaded: boolean) => void;
 };
 
-const DoseCard: FC<DoseCardProps> = ({ NumberOfDosesToShow, Refresh }) => {
+const DoseCard: FC<DoseCardProps> = ({
+  NumberOfDosesToShow,
+  Loaded,
+  SetLoaded,
+}) => {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [doses, setDoses] = useState<RemainingDoses[]>([]);
-  const [loaded, setLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchDoses = async () => {
@@ -40,23 +44,22 @@ const DoseCard: FC<DoseCardProps> = ({ NumberOfDosesToShow, Refresh }) => {
         ds.sort((a, b) => a.Medication.Name.localeCompare(b.Medication.Name));
 
         setDoses(ds);
-        setLoaded(true);
+        SetLoaded(true);
       } catch (e) {
         console.log(e);
       }
     };
 
-    // // if (doses.length === 0 && !loaded) {
-    fetchDoses();
-    // }
+    if (doses.length === 0 && !Loaded) {
+      fetchDoses();
+    }
   }, [
     doses,
     setDoses,
-    loaded,
-    setLoaded,
+    Loaded,
+    SetLoaded,
     isAuthenticated,
     getAccessTokenSilently,
-    Refresh,
   ]);
 
   const handleDoseAction = async (
@@ -97,15 +100,14 @@ const DoseCard: FC<DoseCardProps> = ({ NumberOfDosesToShow, Refresh }) => {
 
   return (
     <div>
-      <div>Next Dose</div>
       <ul style={{ listStyleType: "none", padding: 0 }}>
         {doses.map((dose) => (
           <li
             key={dose.Medication.Name}
             style={{ marginBottom: "10px" }}
-            className="block max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700"
+            className="block max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700"
           >
-            <div>
+            <div className="mb-2">
               <strong>Medication:</strong> {dose.Medication.Name}
               <div>Doses until refill: {DosesTillRefill(dose.Doses)} </div>
               <div>Doses until empty: {DosesTillEmpty(dose.Doses)}</div>
@@ -120,7 +122,7 @@ const DoseCard: FC<DoseCardProps> = ({ NumberOfDosesToShow, Refresh }) => {
                     onClick={() => {
                       handleDoseAction(schedule.ID, schedule.Time, "taken");
                     }}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-4 mr-2 mb-2 rounded"
                   >
                     Taken
                   </button>
@@ -128,7 +130,7 @@ const DoseCard: FC<DoseCardProps> = ({ NumberOfDosesToShow, Refresh }) => {
                     onClick={() =>
                       handleDoseAction(schedule.ID, schedule.Time, "skipped")
                     }
-                    className="bg-red-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                    className="bg-red-500 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded"
                   >
                     Skipped
                   </button>
