@@ -130,7 +130,7 @@ const DoseCard: FC<DoseCardProps> = ({
                     onClick={() =>
                       handleDoseAction(schedule.ID, schedule.Time, "skipped")
                     }
-                    className="bg-red-500 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded"
+                    className="bg-red-600 hover:bg-red-800 text-white font-bold py-1 px-4 rounded"
                   >
                     Skipped
                   </button>
