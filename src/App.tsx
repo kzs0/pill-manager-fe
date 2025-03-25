@@ -41,34 +41,42 @@ function App() {
 
   if (!isAuthenticated) {
     return (
-      <>
-        <LoginButton />
-        <div>Please login to continue</div>
-      </>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="card p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold mb-6 text-blue-600 dark:text-blue-400">Medication Manager</h1>
+          <p className="mb-6 text-gray-600 dark:text-gray-300">Please log in to manage your medications</p>
+          <LoginButton />
+        </div>
+      </div>
     );
   }
 
   if (!isAvailable) {
     return (
-      <>
-        Your account is not approved. Please notify the site owner if you
-        believe this is incorrect.
-      </>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="card p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold mb-6 text-blue-600 dark:text-blue-400">Account Not Approved</h1>
+          <p className="mb-4 text-gray-600 dark:text-gray-300">
+            Your account is not approved. Please notify the site owner if you
+            believe this is incorrect.
+          </p>
+          <LogoutButton />
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
-      <header className="bg-white shadow-sm dark:bg-gray-700">
-        <div className="flex justify-between mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold tracking-tight">
+    <div className="min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <header className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="flex justify-between items-center mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <h1 className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
             Medication Manager
           </h1>
-          <div />
-          <div>
+          <div className="flex items-center space-x-3">
             <button
               onClick={handleOpenPopup}
-              className="bg-gray-400 shadow-md align-middle hover:bg-gray-600 text-white font-medium rounded-lg text-sm px-4 py-2 me-2 mb-2 dark:bg-gray-600 dark:hover:bg-gray-800"
+              className="btn btn-primary"
             >
               Add Medication
             </button>
@@ -77,7 +85,7 @@ function App() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <DoseCard
           NumberOfDosesToShow={5}
           Loaded={loaded}
@@ -90,8 +98,8 @@ function App() {
           Open={isPopupOpen}
           SetOpen={setIsPopupOpen}
         />
-      </div>
-    </>
+      </main>
+    </div>
   );
 }
 

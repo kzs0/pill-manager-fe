@@ -76,9 +76,9 @@ const DoseCard: FC<DoseCardProps> = ({
       });
 
       if (action === "taken") {
-        await markDoseAsTaken(doseID, doseTime, tk); // Replace with actual API logic
+        await markDoseAsTaken(doseID, doseTime, tk);
       } else if (action === "skipped") {
-        await markDoseAsSkipped(doseID, doseTime, tk); // Replace with actual API logic
+        await markDoseAsSkipped(doseID, doseTime, tk);
       }
 
       setDoses((prevDoses) => {
@@ -95,51 +95,94 @@ const DoseCard: FC<DoseCardProps> = ({
   };
 
   if (!isAuthenticated) {
-    return <div>Please Login to View Doses</div>;
+    return <div className="text-center py-8">Please Login to View Doses</div>;
+  }
+
+  if (doses.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <div className="card p-8 mx-auto max-w-md">
+          <p className="text-gray-600 dark:text-gray-300">No medications found</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Add a medication to get started</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <ul style={{ listStyleType: "none", padding: 0 }}>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Your Medications</h2>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {doses.map((dose) => (
-          <li
+          <div
             key={dose.Medication.Name}
-            style={{ marginBottom: "10px" }}
-            className="block max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700"
+            className="card p-6 flex flex-col"
           >
-            <div className="mb-2">
-              <strong>Medication:</strong> {dose.Medication.Name}
-              <div>Doses until refill: {DosesTillRefill(dose.Doses)} </div>
-              <div>Doses until empty: {DosesTillEmpty(dose.Doses)}</div>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400">{dose.Medication.Name}</h3>
+              {dose.Medication.Brand && (
+                <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full px-2 py-1">
+                  {dose.Medication.Brand}
+                </span>
+              )}
             </div>
-            {dose.Doses.slice(0, NumberOfDosesToShow).map((schedule) => (
-              <div key={schedule.ID}>
-                <strong>Time:</strong>{" "}
-                {new Date(schedule.Time).toLocaleString()}{" "}
-                <strong>Amount:</strong> {schedule.Amount} {schedule.Unit}
-                <div>
-                  <button
-                    onClick={() => {
-                      handleDoseAction(schedule.ID, schedule.Time, "taken");
-                    }}
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-4 mr-2 mb-2 rounded"
-                  >
-                    Taken
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleDoseAction(schedule.ID, schedule.Time, "skipped")
-                    }
-                    className="bg-red-600 hover:bg-red-800 text-white font-bold py-1 px-4 rounded"
-                  >
-                    Skipped
-                  </button>
-                </div>
+            
+            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-4">
+              <div>
+                <span className="font-medium">Until refill:</span>{" "}
+                <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-md">
+                  {DosesTillRefill(dose.Doses)}
+                </span>
               </div>
-            ))}
-          </li>
+              <div>
+                <span className="font-medium">Until empty:</span>{" "}
+                <span className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-md">
+                  {DosesTillEmpty(dose.Doses)}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4 mt-2">
+              {dose.Doses.slice(0, NumberOfDosesToShow).map((schedule) => (
+                <div key={schedule.ID} className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Time:</span>{" "}
+                      <span className="font-medium">
+                        {new Date(schedule.Time).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Amount:</span>{" "}
+                      <span className="font-medium">
+                        {schedule.Amount} {schedule.Unit}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        handleDoseAction(schedule.ID, schedule.Time, "taken");
+                      }}
+                      className="btn btn-primary btn-sm flex-1"
+                    >
+                      Taken
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleDoseAction(schedule.ID, schedule.Time, "skipped")
+                      }
+                      className="btn btn-danger btn-sm flex-1"
+                    >
+                      Skipped
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
